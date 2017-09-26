@@ -375,23 +375,181 @@ stdin.on('data', key => {
 
 Вот на этом месте я не могу дать гарантии, что большинство, как принято говорить, middle разработчиков скажут что этот код плох. Этим я и объясняю засилие подобных подходов при изложении идей в проектах. 
 
-Я не ошибся... Именно изложение идей, а не написание кода. И в этом то и состоит главная проблема современной разработки. Дана идея, а мы кодим, потом пытаемя прочесть... А что прочесть? Код конечно! А где же идея? А её уже нет, мы ее благополучно уничтожили собственными руками. Да ищё как изощренно: при помощи паттернов программирования, ООП. А ведь заказчик заплатил деньги ИМЕННО за реализацию ИДЕИ! 
+Я не ошибся... Именно изложение идей, а не написание кода. И в этом то и состоит главная проблема современной разработки. Заказчик дал идею. Начало хорошее: обсуждение - планирование - дизайн - архитектурное решение. Пока хорошо. Начинаем кодить, потом пытаемя прочесть... А что прочесть? Код конечно! А где же идея? А её уже нет, мы ее благополучно уничтожили своими руками, как собственно и проект. Да ищё как изощренно: при помощи паттернов программирования, ООП. А ведь заказчик заплатил деньги ИМЕННО за реализацию ИДЕИ! 
 
 Поймите правильно: не разработчик для кода, а код для разработчика.
 
 Поэтому хватит писать код!!!
 
-Давайте излагать идеи при помощи кода. Тем более, что в истории ИТ такие попытки уже были. Самая яркая из них, на мой взгляд это технология Smalltalk. Почему она не стала мейнстримом - предмет исследования ученых.
+Давайте излагать идеи при помощи кода. Тем более, что в истории ИТ такие попытки уже были. Самая яркая из них, на мой взгляд это технология Smalltalk. Почему она не стала мейнстримом - предмет исследования ученых. В любом случае наш код должен быть больше, чем human readable (human readable я лично считаю ловушкой: looks goos != to be good), я бы сказал что human oriented. Согласитесь, это две большие разницы! Прочесть - это одно, а понять, а тем более понять быстро (давайте вспомним о зоне комфортного кодирования) - это уже совсем иной уровень.
+
+Вот с этого самого уровня и начинается понятийная простота. Как вы уже наверное поняли, элементарными средстваими она не достигается. Тут мало одной декомпозиции: нужен осмысленный подход. Его объясление начну немного издалека. 
+
+Дело в том, что практически любому человеку проще:
+
+ * делать ОДНО дело в ОДИН момент времени
+ * оперировать атомарными, а не комплексными понятиями
+ * оперировать комплексным понятием с прозрачными, а не размытыми связями между отдельными его компонентами 
+ * полагаться на логическое, а не механическое запоминание
+
+Не думаю, что надо продолжать этот список: вектор дальнейший рассуждений ясен.
+
+Позволю себе еще ряд неочевидных, но на мой взгляд важных рассуждений. Коль уж мы стремимся к human oriented коду, то именно его, те код, надо приближать как максимум к естественному человеческому мышлению или как минимум, к естественному человеческому языку. Кстати, подстраиванием нашего мышления под код мы занимаемся сейчас в нашей повседневной разработке. Борьбой с этим злом мы с вами сейчаси займемся. 
+
+И вот какие тезисы могут тут оказаться полезными:
+ 
+ * человек находится во временных рамках
+ * человек мыслит образами
+ * образы чаще всего представляют собой из предметов и действий над предметами
+ * человек постоянно ведет обмен информацией при непосредственном участии образов
 
 
 
+# POS принцип
 
+(Process - Object - Story)
 
+```javascript
+const stdin = process.stdin;
 
+stdin.setRawMode(true);
+stdin.resume();
+stdin.setEncoding('utf8');
 
+class RecursiveTimer {
+  constructor(context) {
+    this.context = context;
+    this.initialValue = null;
+    this.fixedTimeout = null;
+  }
 
+  withInitialValue(initialValue) {
+    this.initialValue = initialValue;
 
+    return this;
+  }
 
-после этого рассказать о ЕЯ и разгромить сущ парадигму
-+история - smalltalk, провал...мейнстрим
+  withCustomTimeout(getNextTimeoutFun) {
+    this.getNextTimeout = getNextTimeoutFun.bind(this.context);
 
+    return this;
+  }
+
+  withFixedTimeout(fixedTimeout) {
+    this.fixedTimeout = fixedTimeout;
+
+    return this;
+  }
+
+  calculateNextValue(getNextValueFun) {
+    this.getNextValue = getNextValueFun.bind(this.context);
+
+    return this;
+  }
+
+  start(actionFun) {
+    if (this.getNextValue && this.fixedTimeout) {
+      throw Error('Timeout is missing!');
+    }
+
+    this.action = actionFun.bind(this.context);
+
+    const nextTimeout = this.fixedTimeout || this.getNextTimeout();
+    const nextValue = this.getNextValue ? this.getNextValue() : null;
+ 
+    this.action(this.initialValue);
+
+    this.globalTimeout = setTimeout(() => {
+      this.process(nextValue);
+    }, nextTimeout);
+  }
+
+  restartFrom(value) {
+    clearTimeout(this.globalTimeout);
+
+    this.process(value);
+  }
+
+  process(value) {
+    this.action(value);
+
+    const timeout = this.fixedTimeout || this.getNextTimeout();
+    const nextValue = this.getNextValue ? this.getNextValue() : null;
+
+    clearTimeout(this.globalTimeout);
+  
+    this.globalTimeout = setTimeout(() => {
+      this.process(nextValue);
+    }, timeout);
+  }
+}
+
+const RED_STATE = 0;
+const YELLLOW_BEFORE_GREEN_STATE = 1;
+const GREEN_STATE = 2;
+const YELLOW_AFTER_GREEN_STATE = 3;
+
+class TrafficLight {
+  constructor() {
+    this.RED = Symbol('RED');
+    this.YELLOW = Symbol('YELLOW');
+    this.GREEN = Symbol('GREEN');
+
+    this.flow = [this.RED, this.YELLOW, this.GREEN, this.YELLOW];
+    this.current = 0;
+  }
+
+  setAndShowLight(newLightValue) {
+    this.current = newLightValue;
+
+    console.log(String(this.flow[this.current]), new Date());
+  }
+
+  getNextLight() {
+    return this.current + 1 < this.flow.length ? this.current + 1 : 0;
+  }
+
+  getNextTimeout() {
+    const nextLight = this.getNextLight();
+
+    return nextLight === RED_STATE || nextLight === GREEN_STATE ? 2000 : 5000;
+  }
+
+  isRedOrYellowAfterGreen() {
+    return this.current === RED_STATE || this.current === YELLOW_AFTER_GREEN_STATE;
+  }
+}
+
+class TrafficLightStory {
+  constructor() {
+    this.trafficLight = new TrafficLight();
+    this.recursiveTimer = new RecursiveTimer(this.trafficLight);
+  }
+
+  tell() {
+    this.recursiveTimer
+      .withInitialValue(RED_STATE)
+      .withCustomTimeout(this.trafficLight.getNextTimeout)
+      .calculateNextValue(this.trafficLight.getNextLight)
+      .start(this.trafficLight.setAndShowLight);
+  }
+
+  requestGreen() {
+    if (this.trafficLight.isRedOrYellowAfterGreen()) {
+      this.recursiveTimer.restartFrom(YELLLOW_BEFORE_GREEN_STATE);
+    }
+  }
+}
+
+const trafficLightStory = new TrafficLightStory();
+
+trafficLightStory.tell();
+
+stdin.on('data', key => {
+  if ( key === '\u0003' ) {
+    process.exit();
+  }
+
+  trafficLightStory.requestGreen();
+});
+```
