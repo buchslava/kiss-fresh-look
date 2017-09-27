@@ -400,9 +400,98 @@ stdin.on('data', key => {
  
  * человек находится во временных рамках
  * человек мыслит образами
- * образы чаще всего представляют собой из предметов и действий над предметами
+ * образы чаще всего представляют собой комбинацию из предметов и действий над ними
  * человек постоянно ведет обмен информацией при непосредственном участии образов
+ * универсальная единица обмена информацией - ИСТРОИЯ
+ * экран - это максимальная часть кода, которая воспринимается разработчиком единовременно (я об этом говорил ранее)
+ * образ/история должен умещаться на один экран (следствие из вышесказанного), и ни в коем случае растягиваться более чем на два.
+ * метод-класс, да и вообще обособленный именованый фрагмент кода, должнен решать только ОДНУ задачу и относиться к доной предметной области
 
+Попробуем воплотить эти тезисы в жизнь. Для этого вернемся к `02oop.js`. Позволю себе его повторить:
+
+```javascript
+const stdin = process.stdin;
+
+stdin.setRawMode(true);
+stdin.resume();
+stdin.setEncoding('utf8');
+
+class TrafficLight {
+  constructor() {
+    this.RED = Symbol('RED');
+    this.YELLOW = Symbol('YELLOW');
+    this.GREEN = Symbol('GREEN');
+
+    this.lights = [this.RED, this.YELLOW, this.GREEN, this.YELLOW];
+    this.currentLight = 0;
+    this.timeoutId = null;
+  }
+
+  process(currentLight) {
+    this.currentLight = currentLight;
+
+    const nextLight = this.currentLight + 1 < this.lights.length ? this.currentLight + 1 : 0;
+    const timeoutValue = nextLight === 0 || nextLight === 2 ? 2000 : 5000;
+
+    console.log(String(this.lights[currentLight]), new Date());
+
+    clearTimeout(this.globalTimeout);
+
+    this.globalTimeout = setTimeout(() => {
+        this.process(nextLight);
+    }, timeoutValue);
+  }
+
+  greenRequest() {
+    if (this.currentLight === 0 || this.currentLight === 3) {
+      clearTimeout(this.globalTimeout);
+
+      this.process(1);
+    }
+  }
+}
+
+const trafficLight = new TrafficLight();
+
+trafficLight.process(0);
+
+stdin.on('data', key => {
+  if ( key === '\u0003' ) {
+    process.exit();
+  }
+
+  trafficLight.greenRequest();
+});
+```
+
+Предлагаю ответить на два вопроса:
+
+ 1. Сколько задач решает метод `process`?
+ 2. Сколько предметных областей включает в себя класс `TrafficLight`?
+ 
+Давайте подумаем вместе.
+
+Ответ на вопрос 1. Может показаться, что данный метод решает одну задачу... Ну он же метод, в конце концов. Ответ неправильный. Две? - работа со светофором и таймером? Уже теплее, но неконкретно. Кто больше???
+
+На самом деле 4! Удивлены?
+
+Так вот, метод `process` решает такие задачи:
+
+ 1. вычисление следующего света: `const nextLight = ...`
+ 2. вычисление значения таймаута: `const timeoutValue = ...`
+ 3. вывод на экран значения света: `console.log(String(this.lights[currentLight]), new Date());`
+ 4. работа с таймером: `clearTimeout(this.globalTimeout); this.globalTimeout = setTimeout(() => { ...`
+
+Не слишком ли много для одного метода?
+
+Ответ на вопрос 2. Тут проще: из ответа на первый вопрос можно сделать вывод, что две: светофор и таймер.
+
+Итак, очевидно, что одним классом мы уже не отделаемся, если хотим отрефакторить класс `TrafficLight` правильно. А сколько классов необходимо? Давайде вновь поразмыслим. 
+
+Функционал светофора - раз. 
+Функционал таймера (я бы сказал - рекурсивного таймера) - два.
+
+Все? Нет и еще раз нет - так как таймер - сам по себе, и светофор - сам по себе. Между ними должна быть некая связка. И действительно, ...
 
 
 # POS принцип
