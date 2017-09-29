@@ -471,7 +471,7 @@ stdin.on('data', key => {
  
 Давайте подумаем вместе.
 
-Ответ на вопрос 1. Может показаться, что данный метод решает одну задачу... Ну он же метод, в конце концов. Ответ неправильный. Две? - работа со светофором и таймером? Уже теплее, но неконкретно. Кто больше???
+Ответ на первый вопрос. Может показаться, что данный метод решает одну задачу... Ну он же метод, в конце концов. Ответ неправильный. Две? - работа со светофором и таймером? Уже теплее, но неконкретно. Кто больше???
 
 На самом деле 4! Удивлены?
 
@@ -482,16 +482,151 @@ stdin.on('data', key => {
  3. вывод на экран значения света: `console.log(String(this.lights[currentLight]), new Date());`
  4. работа с таймером: `clearTimeout(this.globalTimeout); this.globalTimeout = setTimeout(() => { ...`
 
-Не слишком ли много для одного метода?
+Не слишком ли много для одного метода? Многовато, однако...
 
-Ответ на вопрос 2. Тут проще: из ответа на первый вопрос можно сделать вывод, что две: светофор и таймер.
+Ответ на второй вопрос. Тут проще: из ответа на первый вопрос можно сделать вывод, что две: светофор и таймер.
 
 Итак, очевидно, что одним классом мы уже не отделаемся, если хотим отрефакторить класс `TrafficLight` правильно. А сколько классов необходимо? Давайде вновь поразмыслим. 
 
-Функционал светофора - раз. 
-Функционал таймера (я бы сказал - рекурсивного таймера) - два.
+Проведем небольшой экскурс в тайны человеческого разума и попытаемся ответить на такой вопрос. Как человек обменивается информацией? Ответ очевиден - вербально, те при помощи произвольного языка. Скажем, для упрощения - нашего естественного человеческого языка, используемого нами ежедневно. Что мы делаем чаще всего для того, чтобы передать информацию вербально? Правильно, рассказываем друг другу ИСТОРИИ. А без чего невозможна минимальная история. Без ПРЕДМЕТА и ДЕЙСТВИЯ, связанного с этим предметом. Запомним эту идею, она нам скоро очень пригодится! 
 
-Все? Нет и еще раз нет - так как таймер - сам по себе, и светофор - сам по себе. Между ними должна быть некая связка. И действительно, ...
+Вернемся к первоначальной задаче. Так сколько классов надо для описания Светофора? Давайте начинать считать.
+Функционал светофора - раз. 
+Функционал рекурсивного таймера - два.
+
+B это все? Наверное нет: в такой конструкции светофор ничего не знает о таймере, а таймер - о светофоре. И тут уже опытный разработчик скажет: Ну постойте, все ж ведь просто: эта проблема рещается при помощи DI! Заинжектим таймер в светофор!
+
+Звучит заманчиво, да и код возможно будет красив. Но вот читебелен ли? Я думаю что нет, и вот почему. Дело в том, что Светофор это Светофор, простите за тавтологию... Он просто предмет. А таймер - это процесс и он просто процесс. Скрещивание предмета с действием противоречит нашей человеческой вербальной сущности. Давайте по-честному предмет - это предмет, а действие - это действие.
+
+А то получается такая картина: предмето-действие посредством своего действия порождает другое предмето-действие, которое своим действием меняет предмет из породившего его предмето-действия. Вот так мы сейчас пишем код. Ужасы генной инженерии нервно курят в сторонке!!!
+
+Вот именно тут и кроется одна из главных проблем при работе с кодом. Мы пытаемся создавать искусственные вербальные (а ведь язык программирования - это тоже язык) конструкции не выходя из зона нашего естественного языка, мышления и ментальности. И создаем, и довольно успешно... Но вот только обратно воспроизвести не можем потому, что они никак не связаны с реальным миром и поэтому нежизнеспособны. Нежизнеспособны, я не ошибся... Это совершенно серьезно: тут кроется глубокий смысл. Наш код ничем не отличается от литературного произведения или предмета живописи. Он - такая же передача человеческих мыслей, только более точная и более интерактивная.
+
+
+
+Нет и еще раз нет - так как таймер - сам по себе, и светофор - сам по себе. Между ними должна быть некая связка. И действительно, ...
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+```javascript
+const stdin = process.stdin;
+
+stdin.setRawMode(true);
+stdin.resume();
+stdin.setEncoding('utf8');
+
+class RecursiveTimer {
+  constructor(context) {
+    this.context = context;
+  }
+
+  stop() {
+    clearTimeout(this.globalTimeout);
+  }
+
+  process(value, actionFun, getNextTimeoutFun, getNextValueFun) {
+    const action = actionFun.bind(this.context);
+    const getNextTimeout = getNextTimeoutFun.bind(this.context);
+    const getNextValue = getNextValueFun.bind(this.context);
+
+    action(value);
+
+    const timeout = getNextTimeout();
+    const nextValue = getNextValue();
+
+    clearTimeout(this.globalTimeout);
+  
+    this.globalTimeout = setTimeout(() => {
+      this.process(nextValue, actionFun, getNextTimeoutFun, getNextValueFun);
+    }, timeout);
+  }
+}
+
+const RED_STATE = 0;
+const YELLLOW_BEFORE_GREEN_STATE = 1;
+const GREEN_STATE = 2;
+const YELLOW_AFTER_GREEN_STATE = 3;
+
+class TrafficLight {
+  constructor() {
+    this.RED = Symbol('RED');
+    this.YELLOW = Symbol('YELLOW');
+    this.GREEN = Symbol('GREEN');
+
+    this.flow = [this.RED, this.YELLOW, this.GREEN, this.YELLOW];
+    this.current = 0;
+  }
+
+  setAndShowLight(newLightValue) {
+    this.current = newLightValue;
+
+    console.log(String(this.flow[this.current]), new Date());
+  }
+
+  getNextLight() {
+    return this.current + 1 < this.flow.length ? this.current + 1 : 0;
+  }
+
+  getNextTimeout() {
+    const nextLight = this.getNextLight();
+
+    return nextLight === RED_STATE || nextLight === GREEN_STATE ? 2000 : 5000;
+  }
+
+  isRedOrYellowAfterGreen() {
+    return this.current === RED_STATE || this.current === YELLOW_AFTER_GREEN_STATE;
+  }
+}
+
+class TrafficLightStory {
+  constructor() {
+    this.trafficLight = new TrafficLight();
+    this.recursiveTimer = new RecursiveTimer(this.trafficLight);
+  }
+
+  tell() {
+    this.recursiveTimer.process(
+      RED_STATE,
+      this.trafficLight.setAndShowLight,
+      this.trafficLight.getNextTimeout,
+      this.trafficLight.getNextLight);
+  }
+
+  requestGreen() {
+    if (this.trafficLight.isRedOrYellowAfterGreen()) {
+      this.recursiveTimer.stop();
+      this.recursiveTimer.process(
+        YELLLOW_BEFORE_GREEN_STATE,
+        this.trafficLight.setAndShowLight,
+        this.trafficLight.getNextTimeout,
+        this.trafficLight.getNextLight);
+    }
+  }
+}
+
+const trafficLightStory = new TrafficLightStory();
+
+trafficLightStory.tell();
+
+stdin.on('data', key => {
+  if ( key === '\u0003' ) {
+    process.exit();
+  }
+
+  trafficLightStory.requestGreen();
+});
+```
 
 
 # POS принцип
