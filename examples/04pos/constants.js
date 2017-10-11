@@ -1,0 +1,6 @@
+module.exports = {
+  RED_STATE: 0,
+  YELLLOW_BEFORE_GREEN_STATE: 1,
+  GREEN_STATE: 2,
+  YELLOW_AFTER_GREEN_STATE: 3
+};

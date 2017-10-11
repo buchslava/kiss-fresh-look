@@ -748,23 +748,39 @@ class RecursiveTimer {
     return this;
   }
 
-  // метод, реализующий старт процесса и принимающий функнию
-  // запускаемую рекурсивно 
-  start(actionFun) {
-    //////////
-    // какой-либо тип таймаута должен присутствовать
-    if (this.getNextValue && this.fixedTimeout) {
-      throw Error('Timeout is missing!');
+  // проверка правильности параметров
+  checkConstraints() {
+    // какой-либо таймаут должен быть установлен
+    // вычисляемый функцией (getNextTimeout) или четкий (fixedTimeout)
+    if (!(this.getNextTimeout || this.fixedTimeout)) {
+      throw Error('Timeout is confusing or missing!');
     }
 
+    // функция для вычисления следующего значения должна быть установлена
+    if (!this.getNextValue) {
+      throw Error('Function for value calculating is missing!');
+    }
+  }
+
+  // метод, реализующий старт процесса и принимающий функнию
+  // запускаемую рекурсивно
+  // сам метод не вызывается рекурсивно и вызывается в начале Процесса
+  start(actionFun) {
+    // проверим правильность
+    this.checkConstraints();
+
+    // сохраним правильную (привязанную к контексту функцию action)
     this.action = actionFun.bind(this.context);
 
     const nextTimeout = this.fixedTimeout || this.getNextTimeout();
     const nextValue = this.getNextValue ? this.getNextValue() : null;
  
+    // основные действия
     this.action(this.initialValue);
 
+    // запускаем таймер
     this.globalTimeout = setTimeout(() => {
+      // и вызываем process
       this.process(nextValue);
     }, nextTimeout);
   }
@@ -775,14 +791,18 @@ class RecursiveTimer {
     this.process(value);
   }
 
+  // метод, выполняющий основную работу и вызываемый рекурсивно
   process(value) {
+    // отработать основные действия 
     this.action(value);
 
+    // посчитать следующие значение и таймаут
     const timeout = this.fixedTimeout || this.getNextTimeout();
     const nextValue = this.getNextValue ? this.getNextValue() : null;
 
     clearTimeout(this.globalTimeout);
-  
+    
+    // сделать рекурсивный вызов по таймеру
     this.globalTimeout = setTimeout(() => {
       this.process(nextValue);
     }, timeout);
