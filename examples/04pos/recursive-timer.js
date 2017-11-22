@@ -1,8 +1,13 @@
 module.exports = class RecursiveTimer {
-  constructor(context) {
-    this.context = context;
+  constructor() {
     this.initialValue = null;
     this.fixedTimeout = null;
+  }
+
+  for(context) {
+    this.context = context;
+
+    return this;
   }
 
   withInitialValue(initialValue) {

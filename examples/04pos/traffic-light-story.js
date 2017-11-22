@@ -5,11 +5,12 @@ const RecursiveTimer = require('./recursive-timer');
 module.exports = class TrafficLightStory {
   constructor() {
     this.trafficLight = new TrafficLight();
-    this.recursiveTimer = new RecursiveTimer(this.trafficLight);
+    this.recursiveTimer = new RecursiveTimer();
   }
 
   tell() {
     this.recursiveTimer
+      .for(this.trafficLight)
       .withInitialValue(constants.RED_STATE)
       .withCustomTimeout(this.trafficLight.getNextTimeout)
       .calculateNextValue(this.trafficLight.getNextLight)
