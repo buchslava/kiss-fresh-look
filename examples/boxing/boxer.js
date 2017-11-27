@@ -1,10 +1,9 @@
 const util = require('./util');
-
-const PUNCH = 1;
-const KNOCKOUT = 2;
+const constants = require('./constants');
 
 module.exports = class Boxer {
-    constructor(name) {
+    constructor(name, eventEmitter) {
+        this.eventEmitter = eventEmitter;
         this.name = name;
         this.missedPunches = [];
     }
@@ -12,25 +11,25 @@ module.exports = class Boxer {
     fight(punchType) {
         console.log(`${this.name}: ${punchType} ${this.missedPunches.length}`);
 
-        eventEmitter.emit('punch', { author: this.name, type: punchType });
+        this.eventEmitter.emit('punch', { author: this.name, type: punchType });
     }
 
     getNextPunch() {
-        const power = getRandom(0, 10);
+        const power = util.getRandom(0, 10);
 
         if (power === 9) {
-            return KNOCKOUT;
+            return constants.KNOCKOUT;
         }
 
-        return PUNCH;
+        return constants.PUNCH;
     }
 
     shouldBeReadyToPunch(onKnockout) {
-        eventEmitter.on('punch', punchDescriptor => {
+        this.eventEmitter.on('punch', punchDescriptor => {
             if (punchDescriptor.author === this.opponent.name) {
                 this.missedPunches.push(punchDescriptor);
 
-                if (punchDescriptor.type === KNOCKOUT) {
+                if (punchDescriptor.type === constants.KNOCKOUT) {
                     onKnockout();
                 }
             }
@@ -40,6 +39,6 @@ module.exports = class Boxer {
     }
 
     getNextTimeout() {
-        return getRandom(200, 5000);
+        return util.getRandom(200, 5000);
     }
 }

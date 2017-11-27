@@ -1,4 +1,5 @@
 const RecursiveTimer = require('./recursive-timer');
+const constants = require('./constants');
 
 module.exports = class BoxerStory {
   constructor(boxer) {
@@ -26,7 +27,7 @@ module.exports = class BoxerStory {
 
   tell() {
     this.recursiveTimer
-      .withInitialValue(PUNCH)
+      .withInitialValue(constants.PUNCH)
       .withTimeLimit(this.timeLimit)
       .withCustomTimeout(this.boxer.getNextTimeout)
       .calculateNextValue(this.boxer.getNextPunch)

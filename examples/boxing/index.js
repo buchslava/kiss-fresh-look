@@ -6,39 +6,31 @@ const BoxerStory = require('./boxer-story');
 
 const eventEmitter = new EventEmitter();
 
-/*
-class Bid {
-}
-*/
+// Bid {
 
 class MatchStory {
   constructor(boxerRed, boxerBlue) {
     boxerRed.opponent = boxerBlue;
     boxerBlue.opponent = boxerRed;
-
-    const onMatchEnd = () => {
-      this.boxerRedStory.stopFighting();
-      this.boxerBlueStory.stopFighting();
-      this.showResult();
-      // this.onFinish()
-    };
-    const matchTimeLimit = 30000;
-
-    this.boxerRedStory = new BoxerStory(boxerRed)
-      .withTimeLimit(matchTimeLimit)
-      .ifHadKnockout(onMatchEnd)
-      .ifTimeLimitReached(onMatchEnd);
-    this.boxerBlueStory = new BoxerStory(boxerBlue)
-      .withTimeLimit(matchTimeLimit)
-      .ifHadKnockout(onMatchEnd)
-      .ifTimeLimitReached(onMatchEnd);
+    this.stories = [new BoxerStory(boxerRed), new BoxerStory(boxerBlue)];
   }
 
-  // tell(onFinish)
   tell() {
-    // this.onFinish = onFinish
-    this.boxerRedStory.tell()
-    this.boxerBlueStory.tell();
+    const onMatchEnd = () => {
+      this.stories.forEach(story => {
+        story.stopFighting()
+      });
+
+      this.showResult();
+    };
+
+    this.stories.forEach(story => {
+      story
+      .withTimeLimit(30000)
+      .ifHadKnockout(onMatchEnd)
+      .ifTimeLimitReached(onMatchEnd)
+      .tell();
+    });
   }
 
   showResult() {
@@ -46,12 +38,12 @@ class MatchStory {
   }
 }
 
-const ali = new Boxer('Ali');
-const fraizer = new Boxer('Fraizer');
+const ali = new Boxer('Ali', eventEmitter);
+const fraizer = new Boxer('Fraizer', eventEmitter);
 const matchStory1 = new MatchStory(ali, fraizer);
 
-const tyson = new Boxer('Tyson');
-const holyfield = new Boxer('Holyfield');
+const tyson = new Boxer('Tyson', eventEmitter);
+const holyfield = new Boxer('Holyfield', eventEmitter);
 const matchStory2 = new MatchStory(tyson, holyfield);
 
 matchStory2.tell();
