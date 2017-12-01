@@ -1,42 +1,11 @@
-const EventEmitter = require('events').EventEmitter
+const EventEmitter = require('events').EventEmitter;
+
 const RecursiveTimer = require('./recursive-timer');
-
 const Boxer = require('./boxer');
-const BoxerStory = require('./boxer-story');
-
+const MatchStory= require('./match-story');
 const eventEmitter = new EventEmitter();
 
 // Bid {
-
-class MatchStory {
-  constructor(boxerRed, boxerBlue) {
-    boxerRed.opponent = boxerBlue;
-    boxerBlue.opponent = boxerRed;
-    this.stories = [new BoxerStory(boxerRed), new BoxerStory(boxerBlue)];
-  }
-
-  tell() {
-    const onMatchEnd = () => {
-      this.stories.forEach(story => {
-        story.stopFighting()
-      });
-
-      this.showResult();
-    };
-
-    this.stories.forEach(story => {
-      story
-      .withTimeLimit(30000)
-      .ifHadKnockout(onMatchEnd)
-      .ifTimeLimitReached(onMatchEnd)
-      .tell();
-    });
-  }
-
-  showResult() {
-    console.log(`that's all...`);
-  }
-}
 
 const ali = new Boxer('Ali', eventEmitter);
 const fraizer = new Boxer('Fraizer', eventEmitter);
