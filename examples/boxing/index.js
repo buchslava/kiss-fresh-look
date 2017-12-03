@@ -1,18 +1,23 @@
 const EventEmitter = require('events').EventEmitter;
+const eventEmitter = new EventEmitter();
 
 const RecursiveTimer = require('./recursive-timer');
 const Boxer = require('./boxer');
-const MatchStory= require('./match-story');
-const eventEmitter = new EventEmitter();
+const MatchStory = require('./match-story');
+const BidsStory = require('./bids-story');
 
-// Bid {
+const Ali = new Boxer('Ali', eventEmitter);
+const Fraizer = new Boxer('Fraizer', eventEmitter);
+const AliFraizer = new MatchStory(Ali, Fraizer, eventEmitter);
 
-const ali = new Boxer('Ali', eventEmitter);
-const fraizer = new Boxer('Fraizer', eventEmitter);
-const matchStory1 = new MatchStory(ali, fraizer);
+const Tyson = new Boxer('Tyson', eventEmitter);
+const Holyfield = new Boxer('Holyfield', eventEmitter);
+const TysonHolyfield = new MatchStory(Tyson, Holyfield, eventEmitter);
 
-const tyson = new Boxer('Tyson', eventEmitter);
-const holyfield = new Boxer('Holyfield', eventEmitter);
-const matchStory2 = new MatchStory(tyson, holyfield);
-
-matchStory2.tell();
+new BidsStory(eventEmitter)
+  .onBidsCollected(() => {    
+    AliFraizer.box();
+    TysonHolyfield.box();
+  })
+  .collectBids(AliFraizer, TysonHolyfield)
+  .matchFinished();

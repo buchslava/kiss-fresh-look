@@ -1,30 +1,33 @@
 const BoxerStory = require('./boxer-story');
 
 module.exports = class MatchStory {
-    constructor(boxerRed, boxerBlue) {
-        boxerRed.opponent = boxerBlue;
-        boxerBlue.opponent = boxerRed;
+    constructor(boxerRed, boxerBlue, eventEmitter) {
+        this.boxerRed = boxerRed;
+        this.boxerBlue = boxerBlue;
+        this.eventEmitter = eventEmitter;
+        this.boxerRed.opponent = boxerBlue;
+        this.boxerBlue.opponent = boxerRed;
         this.stories = [new BoxerStory(boxerRed), new BoxerStory(boxerBlue)];
+    }
+
+    getName() {
+        return `${this.boxerRed.name}-${this.boxerBlue.name}`;
     }
 
     forEachBoxerStory(cb) {
         this.stories.forEach(story => cb(story));
     }
 
-    tell() {
-        const onMatchEnd = () => {
+    box() {
+        const onMatchFinished = () => {
             this.forEachBoxerStory(story => story.stopFighting());
-            this.showResult();
+            this.eventEmitter.emit('match-finished');
         };
 
         this.forEachBoxerStory(story => story
             .withTimeLimit(30000)
-            .ifHadKnockout(onMatchEnd)
-            .ifTimeLimitReached(onMatchEnd)
+            .ifHadKnockout(onMatchFinished)
+            .ifTimeLimitReached(onMatchFinished)
             .tell());
-    }
-
-    showResult() {
-        console.log(`that's all...`);
     }
 }
