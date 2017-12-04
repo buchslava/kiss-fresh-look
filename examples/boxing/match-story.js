@@ -1,3 +1,4 @@
+const constants = require('./constants');
 const BoxerStory = require('./boxer-story');
 
 module.exports = class MatchStory {
@@ -21,7 +22,7 @@ module.exports = class MatchStory {
     box() {
         const onMatchFinished = () => {
             this.forEachBoxerStory(story => story.stopFighting());
-            this.eventEmitter.emit('match-finished');
+            this.eventEmitter.emit('match-finished', this.getName(), this.getWinnerColor());
         };
 
         this.forEachBoxerStory(story => story
@@ -29,5 +30,20 @@ module.exports = class MatchStory {
             .ifHadKnockout(onMatchFinished)
             .ifTimeLimitReached(onMatchFinished)
             .tell());
+    }
+
+    getWinnerColor() {
+        const isRedKnockout = this.boxerRed.missedPunches
+        .filter(punchDescriptor => punchDescriptor.type === constants.KNOCKOUT).length > 0;
+        const isBlueKnockout = this.boxerBlue.missedPunches
+        .filter(punchDescriptor => punchDescriptor.type === constants.KNOCKOUT).length > 0;
+
+        if (isRedKnockout) {
+            return 'blue';
+        } else if (isBlueKnockout) {
+            return 'red';
+        } else {
+            return this.boxerRed.missedPunches.length > this.boxerBlue.missedPunches.length ? 'blue' : 'red';
+        }
     }
 }

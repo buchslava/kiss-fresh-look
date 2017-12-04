@@ -1,24 +1,30 @@
 const util = require('./util');
 
+class BidsComplete {
+    constructor(match, bids) {
+        this.match = match;
+        this.bids = bids;
+    }
+}
+
 module.exports = class BidsStory {
     constructor(eventEmitter) {
         this.eventEmitter = eventEmitter;
     }
 
     collectBids(...matches) {
-        for (const m of matches) {
-            console.log(m.getName());
-        }
+        this.bidCompletes = matches.reduce((result, match) => {
+            const men = util.getMen(util.getRandom(10, 50));
+            const bids = men.map(man => ({
+                man,
+                bid: util.getRandom(10, 100),
+                boxer: util.getRandom(0, 2) === 0 ? 'red' : 'blue'
+            }));
 
-        // todo: bids for every match
+            result[match.getName()] = new BidsComplete(match.getName(), bids);
 
-        const men = util.getMen(util.getRandom(10, 50));
-
-        this.bids = men.map(man => ({
-            man,
-            bid: util.getRandom(10, 100),
-            boxer: util.getRandom(0, 2) === 0 ? 'red' : 'blue'
-        }));
+            return result;
+        }, {});
 
         this.eventEmitter.emit('bids-ready');
 
@@ -32,8 +38,8 @@ module.exports = class BidsStory {
     }
 
     matchFinished() {
-        this.eventEmitter.on('match-finished', () => {
-            console.log('winners!');
+        this.eventEmitter.on('match-finished', (match, winnerColor) => {
+            console.log('winners!', match, winnerColor, this.bidCompletes[match]);
         });
     }
 }
